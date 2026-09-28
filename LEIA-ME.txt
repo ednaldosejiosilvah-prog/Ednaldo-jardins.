@@ -1,14 +1,17 @@
-EDNALDO JARDINS GESTÃO — V3 COMPLETA
+EDNALDO JARDINS GESTÃO — V4 CONTROLE MENSAL
 
-FUNÇÕES ATIVAS:
-- Clientes: cadastrar, editar, pesquisar, status, frequência e valor.
-- Agenda: cadastrar, editar, concluir e excluir serviços.
-- Ao concluir um serviço com valor, o sistema pode gerar automaticamente a entrada financeira.
-- Financeiro: entradas, saídas e combustível.
-- Combustível: litros, preço/litro, cálculo automático, veículo e categoria.
-- Tarefas: criar, editar, concluir e excluir.
-- Relatórios: período, entradas, saídas, combustível, saldo, serviços e litros.
-- Impressão/Salvar PDF pelo navegador.
-- Backup e restauração JSON.
-- Armazenamento local no aparelho.
-- Logo personalizada.
+O financeiro não zera ao virar o mês. Todos os lançamentos permanecem salvos.
+A tela inicial agora permite escolher o mês e mostra:
+- Entradas do mês
+- Saídas do mês
+- Combustível do mês
+- Saldo do mês
+Também existe histórico mensal acumulado.
+Relatórios e backups continuam funcionando.
+
+NOVA FUNÇÃO V5 — SERVIÇOS POR MÊS
+- Nova área "Serviços realizados por mês".
+- Permite selecionar o mês e visualizar somente os serviços daquele período.
+- Mostra quantidade de serviços e valor total dos serviços no mês.
+- Exibe data, horário, cliente, serviço, status e valor.
+- O histórico dos meses anteriores continua salvo; nada é apagado ou zerado.

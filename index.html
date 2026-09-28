@@ -39,9 +39,22 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 <div class="card metric"><span>Saldo</span><b class="green" id="mSaldo">R$ 0,00</b></div>
 </div>
 <div class="actions"><button class="primary" onclick="novoCliente()">＋ Cliente</button><button class="primary" onclick="novoServico()">＋ Serviço</button><button class="primary" onclick="novoFin('entrada')">＋ Entrada</button><button onclick="novoFin('saida')">− Saída</button><button onclick="novoFin('combustivel')">⛽ Combustível</button><button onclick="novoTarefa()">＋ Tarefa</button></div>
+<div class="card"><h3>Resumo do mês</h3>
+<div class="formgrid">
+<div><label>Mês para visualizar</label><input id="mesSelecionado" type="month" onchange="renderAll()"></div>
+<div><label>Período</label><input id="periodoAtual" readonly></div>
+</div>
+<div class="summary" style="margin-top:10px">
+<div><span>Entradas do mês</span><strong class="green" id="mesE">R$ 0,00</strong></div>
+<div><span>Saídas do mês</span><strong class="red" id="mesS">R$ 0,00</strong></div>
+<div><span>Combustível do mês</span><strong class="gold" id="mesC">R$ 0,00</strong></div>
+<div><span>Saldo do mês</span><strong id="mesR">R$ 0,00</strong></div>
+</div></div>
 <div class="card"><h3>Resumo financeiro</h3><div class="summary">
 <div><span>Entradas</span><strong class="green" id="hE">R$ 0,00</strong></div><div><span>Saídas</span><strong class="red" id="hS">R$ 0,00</strong></div><div><span>Combustível</span><strong class="gold" id="hC">R$ 0,00</strong></div><div><span>Resultado</span><strong id="hR">R$ 0,00</strong></div>
 </div></div>
+<div class="card"><h3>Histórico mensal</h3>
+<div class="tablewrap"><table class="table"><thead><tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Combustível</th><th>Saldo</th></tr></thead><tbody id="historicoMensal"></tbody></table></div></div>
 <div class="card"><h3>Próximos serviços</h3><div id="proximos"></div></div>
 </section>
 
@@ -86,6 +99,29 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 <div class="card"><h3>Dados armazenados</h3><div id="dadosInfo"></div></div>
 <div class="card"><h3>Apagar dados</h3><p class="sub">Use somente se quiser começar novamente.</p><button class="danger" onclick="clearAll()">Excluir todos os dados</button></div>
 </section>
+
+<div class="card">
+  <div class="card-title">Serviços realizados por mês</div>
+  <div class="muted">Selecione um mês para visualizar os serviços daquele período. O histórico permanece salvo.</div>
+  <div class="row" style="margin-top:10px">
+    <label>Mês
+      <input type="month" id="mesServicos" onchange="renderServicosMensais()">
+    </label>
+    <div class="stat"><b id="qtdServicosMes">0</b><span>Serviços no mês</span></div>
+    <div class="stat"><b id="valorServicosMes">R$ 0,00</b><span>Valor dos serviços</span></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th><th>Horário</th><th>Cliente</th><th>Serviço</th><th>Status</th><th>Valor</th>
+        </tr>
+      </thead>
+      <tbody id="servicosMensaisBody"></tbody>
+    </table>
+  </div>
+</div>
+
 </main>
 <footer>Ednaldo Jardins Gestão • Sistema de gestão de jardinagem</footer>
 <div id="toast" class="toast"></div>
@@ -127,6 +163,31 @@ function renderTasks(){$('ttab').innerHTML=db.tarefas.length?[...db.tarefas].sor
 function editTask(i){let x=db.tarefas.find(a=>a.id===i);show('tarefas');$('tid').value=i;$('tt').value=x.titulo;$('td').value=x.data||'';$('tp').value=x.prior;$('to').value=x.obs||''}
 function toggleTask(i){let x=db.tarefas.find(a=>a.id===i);x.done=!x.done;persist()}
 function removeItem(t,i){if(confirm('Excluir este registro?')){db[t]=db[t].filter(x=>x.id!==i);persist()}}
+
+function mesAtual(){return new Date().toISOString().slice(0,7)}
+function mesEscolhido(){return $('mesSelecionado')?.value||mesAtual()}
+function resumoMes(m){
+ let a=db.financeiro.filter(x=>(x.data||'').slice(0,7)===m);
+ let e=a.filter(x=>x.tipo==='entrada').reduce((t,x)=>t+Number(x.valor||0),0);
+ let s=a.filter(x=>x.tipo==='saida').reduce((t,x)=>t+Number(x.valor||0),0);
+ let c=a.filter(x=>x.tipo==='combustivel').reduce((t,x)=>t+Number(x.valor||0),0);
+ return {e,s,c,r:e-s};
+}
+function renderMensal(){
+ let m=mesEscolhido(),r=resumoMes(m);
+ $('mesE').textContent=brl(r.e); $('mesS').textContent=brl(r.s);
+ $('mesC').textContent=brl(r.c); $('mesR').textContent=brl(r.r);
+ let [y,mo]=m.split('-');
+ $('periodoAtual').value=new Date(+y,+mo-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+ let meses=[...new Set(db.financeiro.map(x=>(x.data||'').slice(0,7)).filter(Boolean))];
+ let cur=mesAtual(); if(!meses.includes(cur))meses.push(cur); meses.sort((a,b)=>b.localeCompare(a));
+ $('historicoMensal').innerHTML=meses.map(mo=>{
+   let x=resumoMes(mo),[yy,mm]=mo.split('-');
+   let nome=new Date(+yy,+mm-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+   nome=nome.charAt(0).toUpperCase()+nome.slice(1);
+   return `<tr><td><b>${nome}</b></td><td class="green">${brl(x.e)}</td><td class="red">${brl(x.s)}</td><td class="gold">${brl(x.c)}</td><td>${brl(x.r)}</td></tr>`;
+ }).join('')||'<tr><td colspan="5" class="empty">Nenhum lançamento financeiro.</td></tr>';
+}
 function renderHome(){let e=total('entrada'),s=total('saida'),c=total('combustivel');$('mClientes').textContent=db.clientes.filter(x=>x.status!=='Inativo').length;$('mServicos').textContent=db.agenda.filter(x=>x.data>=today()&&x.status!=='Cancelado'&&x.status!=='Concluído').length;$('mReceber').textContent=brl(db.agenda.filter(x=>x.status==='Agendado').reduce((a,x)=>a+Number(x.valor||0),0));$('mSaldo').textContent=brl(e-s);$('hE').textContent=brl(e);$('hS').textContent=brl(s);$('hC').textContent=brl(c);$('hR').textContent=brl(e-s);let a=db.agenda.filter(x=>x.data>=today()&&x.status==='Agendado').sort((x,y)=>(x.data+x.hora).localeCompare(y.data+y.hora)).slice(0,5);$('proximos').innerHTML=a.length?a.map(x=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><b>${x.data} ${x.hora||''}</b> • ${esc(x.cliente)}<br><span>${esc(x.servico)} • ${brl(x.valor)}</span></div>`).join(''):'<span>Nenhum serviço próximo.</span>'}
 function gerarRelatorio(){let i=$('ri').value||'0000-01-01',f=$('rf').value||'9999-12-31';let fin=db.financeiro.filter(x=>x.data>=i&&x.data<=f),ag=db.agenda.filter(x=>x.data>=i&&x.data<=f);let e=fin.filter(x=>x.tipo==='entrada').reduce((a,x)=>a+x.valor,0),s=fin.filter(x=>x.tipo==='saida').reduce((a,x)=>a+x.valor,0),c=fin.filter(x=>x.tipo==='combustivel').reduce((a,x)=>a+x.valor,0);let litros=fin.filter(x=>x.tipo==='combustivel').reduce((a,x)=>a+(x.litros||0),0);$('relatorio').innerHTML=`<div class="grid"><div class="card"><span>Entradas</span><b class="green">${brl(e)}</b></div><div class="card"><span>Saídas</span><b class="red">${brl(s)}</b></div><div class="card"><span>Combustível</span><b class="gold">${brl(c)}</b></div><div class="card"><span>Saldo</span><b>${brl(e-s)}</b></div></div><div class="card"><h3>Atividade</h3><p>Serviços no período: <b>${ag.length}</b></p><p>Abastecimento: <b>${litros.toFixed(2)} litros</b></p><p>Lançamentos financeiros: <b>${fin.length}</b></p><button class="primary" onclick="imprimirRelatorio()">🖨 Imprimir / Salvar PDF</button></div>`}
 function imprimirRelatorio(){let w=window.open('','_blank');w.document.write('<html><head><title>Relatório Ednaldo Jardins</title></head><body>'+($('relatorio').innerHTML)+'<p>Gerado em '+new Date().toLocaleString('pt-BR')+'</p></body></html>');w.document.close();w.print()}
@@ -135,8 +196,42 @@ function restore(ev){let file=ev.target.files[0];if(!file)return;let r=new FileR
 function clearAll(){if(confirm('ATENÇÃO: apagar clientes, agenda, financeiro e tarefas?')){db={clientes:[],agenda:[],financeiro:[],tarefas:[]};persist();toast('Dados apagados')}}
 function renderDados(){$('dadosInfo').innerHTML=`Clientes: <b>${db.clientes.length}</b> • Serviços: <b>${db.agenda.length}</b> • Lançamentos: <b>${db.financeiro.length}</b> • Tarefas: <b>${db.tarefas.length}</b>`}
 function renderRelDefaults(){if(!$('ri').value)$('ri').value=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().slice(0,10);if(!$('rf').value)$('rf').value=today();gerarRelatorio()}
-function renderAll(){renderHome();renderClientes();renderAgenda();renderFin();renderTasks();renderDados();renderRelDefaults();toggleComb()}
+function renderAll(){
+  const ms=document.getElementById('mesServicos'); if(ms && !ms.value) ms.value=mesAtual();if($('mesSelecionado')&&!$('mesSelecionado').value)$('mesSelecionado').value=mesAtual();renderHome();renderMensal();
+  renderServicosMensais();renderClientes();renderAgenda();renderFin();renderTasks();renderDados();renderRelDefaults();toggleComb()}
 $('fd').value=today();$('ad').value=today();renderAll();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js');
+
+function mesServicosEscolhido(){
+  const el=document.getElementById('mesServicos');
+  return el && el.value ? el.value : mesAtual();
+}
+
+function renderServicosMensais(){
+  const m=mesServicosEscolhido();
+  const body=document.getElementById('servicosMensaisBody');
+  if(!body) return;
+  const servicos=(db.agenda||[])
+    .filter(a => (a.data||'').slice(0,7)===m)
+    .sort((a,b)=>((a.data||'')+(a.hora||'')).localeCompare((b.data||'')+(b.hora||'')));
+
+  const valor=servicos.reduce((s,a)=>s+(Number(a.valor)||0),0);
+  const q=document.getElementById('qtdServicosMes');
+  const v=document.getElementById('valorServicosMes');
+  if(q) q.textContent=servicos.length;
+  if(v) v.textContent=brl(valor);
+
+  body.innerHTML=servicos.length ? servicos.map(a=>`
+    <tr>
+      <td>${esc(a.data||'')}</td>
+      <td>${esc(a.hora||'')}</td>
+      <td>${esc(a.cliente||'')}</td>
+      <td>${esc(a.servico||'')}</td>
+      <td>${esc(a.status||'')}</td>
+      <td>${brl(Number(a.valor)||0)}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="6" class="muted">Nenhum serviço cadastrado neste mês.</td></tr>';
+}
+
 </script>
 </body></html>
