@@ -1,0 +1,14 @@
+EDNALDO JARDINS GESTÃO — V3 COMPLETA
+
+FUNÇÕES ATIVAS:
+- Clientes: cadastrar, editar, pesquisar, status, frequência e valor.
+- Agenda: cadastrar, editar, concluir e excluir serviços.
+- Ao concluir um serviço com valor, o sistema pode gerar automaticamente a entrada financeira.
+- Financeiro: entradas, saídas e combustível.
+- Combustível: litros, preço/litro, cálculo automático, veículo e categoria.
+- Tarefas: criar, editar, concluir e excluir.
+- Relatórios: período, entradas, saídas, combustível, saldo, serviços e litros.
+- Impressão/Salvar PDF pelo navegador.
+- Backup e restauração JSON.
+- Armazenamento local no aparelho.
+- Logo personalizada.
